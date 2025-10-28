@@ -1,92 +1,56 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8 < 0.9;
+pragma solidity ^0.8.26;
 
-/// @title KipuBank — simple per-user ETH vault with global cap and per-tx withdraw limit
-/// @author Student
-/// @notice Store ETH per-user, withdraw up to a per-transaction immutable limit. Global bank cap is enforced.
-/// @dev Follows checks-effects-interactions pattern; uses custom errors and NatSpec; simple nonReentrant guard.
 contract KipuBank {
+    // ==============================
+    // State variables
+    // ==============================
 
-    /*//////////////////////////////////////////////////////////////////////////
-                                STATE VARIABLES
-    //////////////////////////////////////////////////////////////////////////*/
-
-    /// @notice Maximum total ETH the bank will accept (set at deployment).
+    // Max total ETH allowed in the bank (set once at deployment)
     uint256 public immutable BANK_CAP;
 
-    /// @notice Maximum amount a user can withdraw in a single transaction (set at deployment).
+    // Max amount per withdrawal (set once at deployment)
     uint256 public immutable WITHDRAWAL_LIMIT;
 
-    /// @notice Current total ETH held in the bank (sum of all users' balances).
+    // Total ETH currently stored in the bank
     uint256 public totalHeld;
 
-    /// @notice Total number of deposit operations successfully executed (global counter).
+    // Total number of deposits made
     uint256 public totalDepositCount;
 
-    /// @notice Total number of withdrawal operations successfully executed (global counter).
+    // Total number of withdrawals made
     uint256 public totalWithdrawCount;
 
-    /// @notice Mapping of user => balance (wei).
+    // Mapping: user => balance (in wei)
     mapping(address => uint256) private balances;
 
-    /// @notice Mapping of user => number of deposits done by that user.
-    mapping(address => uint256) public userDepositCount;
+    // Mapping: user => number of deposits
+    mapping(address => uint256) private userDepositCount;
 
-    /// @notice Mapping of user => number of withdrawals done by that user.
-    mapping(address => uint256) public userWithdrawCount;
+    // Mapping: user => number of withdrawals
+    mapping(address => uint256) private userWithdrawCount;
 
-    /*//////////////////////////////////////////////////////////////////////////
-                                   EVENTS
-    //////////////////////////////////////////////////////////////////////////*/
+    // ==============================
+    // Events
+    // ==============================
 
-    /// @notice Emitted when a user deposits ETH into their vault.
-    /// @param who depositor address
-    /// @param amount amount deposited (wei)
-    /// @param newBalance user's new balance after deposit
-    event Deposit(address indexed who, uint256 amount, uint256 newBalance);
+    event Deposit(address indexed user, uint256 amount, uint256 totalHeld);
+    event Withdrawal(address indexed user, uint256 amount, uint256 remainingBalance);
 
-    /// @notice Emitted when a user withdraws ETH from their vault.
-    /// @param who withdrawer address
-    /// @param amount amount withdrawn (wei)
-    /// @param newBalance user's new balance after withdrawal
-    event Withdrawal(address indexed who, uint256 amount, uint256 newBalance);
+    // ==============================
+    // Custom errors
+    // ==============================
 
-    /*//////////////////////////////////////////////////////////////////////////
-                                   ERRORS
-    //////////////////////////////////////////////////////////////////////////*/
-
-    /// @notice Thrown when deposit value is zero.
+    error BankCapReached();
     error ZeroDeposit();
-
-    /// @notice Thrown when a deposit would exceed the bank's global cap.
-    error ExceedsBankCap(uint256 attempted, uint256 bankCap);
-
-    /// @notice Thrown when withdrawal amount exceeds per-transaction limit.
-    error ExceedsWithdrawalLimit(uint256 attempted, uint256 limit);
-
-    /// @notice Thrown when the user does not have enough balance.
-    error InsufficientBalance(uint256 available, uint256 requested);
-
-    /// @notice Thrown when a native transfer fails.
-    error TransferFailed(address to, uint256 amount);
-
-    /// @notice Thrown on reentrant call.
+    error ExceedsWithdrawalLimit();
+    error InsufficientBalance();
     error ReentrantCall();
 
-    /// @notice Thrown when constructor args are invalid.
-    error InvalidConstructorArgs();
+    // ==============================
+    // Reentrancy protection
+    // ==============================
 
-    /// @notice Thrown when attempting to withdraw zero.
-    error ZeroWithdrawal();
-
-    /// @notice Thrown when ETH is sent directly to contract instead of calling deposit().
-    error DirectDepositNotAllowed();
-
-    /*//////////////////////////////////////////////////////////////////////////
-                                   MODIFIERS
-    //////////////////////////////////////////////////////////////////////////*/
-
-    // simple nonReentrant guard (cheap and effective)
     uint8 private _reentrancyStatus;
     uint8 private constant _NOT_ENTERED = 1;
     uint8 private constant _ENTERED = 2;
@@ -98,111 +62,91 @@ contract KipuBank {
         _reentrancyStatus = _NOT_ENTERED;
     }
 
-    /// @notice Ensures a non-zero value for payable calls.
+    // Require a non-zero ETH value in payable functions
     modifier nonZeroValue() {
         if (msg.value == 0) revert ZeroDeposit();
         _;
     }
 
-    /*//////////////////////////////////////////////////////////////////////////
-                                   CONSTRUCTOR
-    //////////////////////////////////////////////////////////////////////////*/
+    // ==============================
+    // Constructor
+    // ==============================
 
-    /// @notice Construct the KipuBank contract.
-    /// @param _bankCap global cap for total deposits (wei)
-    /// @param _withdrawalLimit per-transaction withdrawal limit (wei)
     constructor(uint256 _bankCap, uint256 _withdrawalLimit) {
-        if (_bankCap == 0 || _withdrawalLimit == 0) revert InvalidConstructorArgs();
         BANK_CAP = _bankCap;
         WITHDRAWAL_LIMIT = _withdrawalLimit;
         _reentrancyStatus = _NOT_ENTERED;
     }
 
-    /*//////////////////////////////////////////////////////////////////////////
-                                  EXTERNAL / PUBLIC API
-    //////////////////////////////////////////////////////////////////////////*/
+    // ==============================
+    // Deposit
+    // ==============================
 
-    /// @notice Deposit ETH to the caller's personal vault.
-    /// @dev external payable; enforces BANK_CAP; updates state then emits event.
-    /// @custom:security Checks-Effects-Interactions followed (no external calls on deposit).
-    function deposit() external payable nonZeroValue {
-        // checks
-        uint256 newTotal = totalHeld + msg.value;
-        if (newTotal > BANK_CAP) revert ExceedsBankCap({attempted: newTotal, bankCap: BANK_CAP});
+    /**
+     * @notice Deposit ETH into your personal vault.
+     */
+    function deposit() external payable nonReentrant nonZeroValue {
+        if (totalHeld + msg.value > BANK_CAP) revert BankCapReached();
 
-        // effects
         balances[msg.sender] += msg.value;
-        totalHeld = newTotal;
+        totalHeld += msg.value;
+        totalDepositCount++;
+        userDepositCount[msg.sender]++;
 
-        // update counters
-        totalDepositCount += 1;
-        userDepositCount[msg.sender] += 1;
-
-        // event
-        emit Deposit(msg.sender, msg.value, balances[msg.sender]);
+        emit Deposit(msg.sender, msg.value, totalHeld);
     }
 
-    /// @notice Withdraw `amount` wei from caller's vault (subject to per-tx limit).
-    /// @dev Follows CEI: effects before interaction. Uses nonReentrant modifier and safe call pattern.
-    /// @param amount amount in wei to withdraw
+    // ==============================
+    // Withdraw
+    // ==============================
+
+    /**
+     * @notice Withdraw ETH respecting your balance and the limit per transaction.
+     */
     function withdraw(uint256 amount) external nonReentrant {
-        if (amount == 0) revert ZeroWithdrawal();
-        if (amount > WITHDRAWAL_LIMIT) revert ExceedsWithdrawalLimit({attempted: amount, limit: WITHDRAWAL_LIMIT});
-        uint256 bal = balances[msg.sender];
-        if (bal < amount) revert InsufficientBalance({available: bal, requested: amount});
+        if (amount > WITHDRAWAL_LIMIT) revert ExceedsWithdrawalLimit();
+        if (balances[msg.sender] < amount) revert InsufficientBalance();
 
-        // effects
-        balances[msg.sender] = bal - amount;
+        balances[msg.sender] -= amount;
         totalHeld -= amount;
+        totalWithdrawCount++;
+        userWithdrawCount[msg.sender]++;
 
-        totalWithdrawCount += 1;
-        userWithdrawCount[msg.sender] += 1;
-
-        // interactions (external) — safe call
-        (bool ok, ) = payable(msg.sender).call{value: amount}("");
-        if (!ok) {
-            revert TransferFailed(msg.sender, amount);
-        }
-
+        _safeTransfer(msg.sender, amount);
         emit Withdrawal(msg.sender, amount, balances[msg.sender]);
     }
 
-    /// @notice Get the ETH balance of a user (in wei).
-    /// @param who address to query
-    /// @return wei balance of `who` stored in the contract
-    function getBalance(address who) external view returns (uint256) {
-        return balances[who];
-    }
+    // ==============================
+    // View functions
+    // ==============================
 
-    /// @notice Convenience: get caller balance.
-    /// @return balance of msg.sender
     function getMyBalance() external view returns (uint256) {
         return balances[msg.sender];
     }
 
-    /*//////////////////////////////////////////////////////////////////////////
-                                   PRIVATE HELPERS
-    //////////////////////////////////////////////////////////////////////////*/
-
-    /// @notice Internal quick-sum used for tests/examples (private function requirement).
-    /// @dev Example of a private helper: returns user's balance plus supplied extra (no state change).
-    /// @param who address to inspect
-    /// @param extra value to add
-    /// @return sum of the stored balance and extra
-    function _balancePlus(address who, uint256 extra) private view returns (uint256) {
-        return balances[who] + extra;
+    function getBalance(address user) external view returns (uint256) {
+        return balances[user];
     }
 
-    /*//////////////////////////////////////////////////////////////////////////
-                                    FALLBACKS
-    //////////////////////////////////////////////////////////////////////////*/
+    function getUserStats(address user) external view returns (uint256 deposits, uint256 withdrawals) {
+        return (userDepositCount[user], userWithdrawCount[user]);
+    }
 
-    /// @notice Reject plain ETH transfers to avoid accidental deposits. Use `deposit()` explicitly.
+    // ==============================
+    // Internal transfer
+    // ==============================
+
+    // Safe native ETH transfer using call
+    function _safeTransfer(address to, uint256 amount) private {
+        (bool success, ) = payable(to).call{value: amount}("");
+        require(success, "Transfer failed");
+    }
+
+    // ==============================
+    // Fallback
+    // ==============================
+
     receive() external payable {
-        revert DirectDepositNotAllowed();
-    }
-
-    fallback() external payable {
-        revert DirectDepositNotAllowed();
+        revert("Direct deposits not allowed");
     }
 }
