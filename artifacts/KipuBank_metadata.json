@@ -479,7 +479,7 @@
 	},
 	"settings": {
 		"compilationTarget": {
-			".git/contracts/KipuBank.sol": "KipuBank"
+			"contracts/KipuBank.sol": "KipuBank"
 		},
 		"evmVersion": "prague",
 		"libraries": {},
@@ -493,7 +493,7 @@
 		"remappings": []
 	},
 	"sources": {
-		".git/contracts/KipuBank.sol": {
+		"contracts/KipuBank.sol": {
 			"keccak256": "0x312b17341923367d9a287ef96550e969ab2e845e5e89eaad3dc1d7495558a24e",
 			"license": "MIT",
 			"urls": [
