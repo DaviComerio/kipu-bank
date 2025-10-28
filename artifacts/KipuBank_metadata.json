@@ -1,0 +1,506 @@
+{
+	"compiler": {
+		"version": "0.8.30+commit.73712a01"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_bankCap",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_withdrawalLimit",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "constructor"
+			},
+			{
+				"inputs": [],
+				"name": "DirectDepositNotAllowed",
+				"type": "error"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "attempted",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "bankCap",
+						"type": "uint256"
+					}
+				],
+				"name": "ExceedsBankCap",
+				"type": "error"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "attempted",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "limit",
+						"type": "uint256"
+					}
+				],
+				"name": "ExceedsWithdrawalLimit",
+				"type": "error"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "available",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "requested",
+						"type": "uint256"
+					}
+				],
+				"name": "InsufficientBalance",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "InvalidConstructorArgs",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "ReentrantCall",
+				"type": "error"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"name": "TransferFailed",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "ZeroDeposit",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "ZeroWithdrawal",
+				"type": "error"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "who",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "newBalance",
+						"type": "uint256"
+					}
+				],
+				"name": "Deposit",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "who",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "newBalance",
+						"type": "uint256"
+					}
+				],
+				"name": "Withdrawal",
+				"type": "event"
+			},
+			{
+				"stateMutability": "payable",
+				"type": "fallback"
+			},
+			{
+				"inputs": [],
+				"name": "BANK_CAP",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "WITHDRAWAL_LIMIT",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "deposit",
+				"outputs": [],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "who",
+						"type": "address"
+					}
+				],
+				"name": "getBalance",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "getMyBalance",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "totalDepositCount",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "totalHeld",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "totalWithdrawCount",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"name": "userDepositCount",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"name": "userWithdrawCount",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"name": "withdraw",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"stateMutability": "payable",
+				"type": "receive"
+			}
+		],
+		"devdoc": {
+			"author": "Student",
+			"details": "Follows checks-effects-interactions pattern; uses custom errors and NatSpec; simple nonReentrant guard.",
+			"events": {
+				"Deposit(address,uint256,uint256)": {
+					"params": {
+						"amount": "amount deposited (wei)",
+						"newBalance": "user's new balance after deposit",
+						"who": "depositor address"
+					}
+				},
+				"Withdrawal(address,uint256,uint256)": {
+					"params": {
+						"amount": "amount withdrawn (wei)",
+						"newBalance": "user's new balance after withdrawal",
+						"who": "withdrawer address"
+					}
+				}
+			},
+			"kind": "dev",
+			"methods": {
+				"constructor": {
+					"params": {
+						"_bankCap": "global cap for total deposits (wei)",
+						"_withdrawalLimit": "per-transaction withdrawal limit (wei)"
+					}
+				},
+				"deposit()": {
+					"custom:security": "Checks-Effects-Interactions followed (no external calls on deposit).",
+					"details": "external payable; enforces BANK_CAP; updates state then emits event."
+				},
+				"getBalance(address)": {
+					"params": {
+						"who": "address to query"
+					},
+					"returns": {
+						"_0": "wei balance of `who` stored in the contract"
+					}
+				},
+				"getMyBalance()": {
+					"returns": {
+						"_0": "balance of msg.sender"
+					}
+				},
+				"withdraw(uint256)": {
+					"details": "Follows CEI: effects before interaction. Uses nonReentrant modifier and safe call pattern.",
+					"params": {
+						"amount": "amount in wei to withdraw"
+					}
+				}
+			},
+			"title": "KipuBank — simple per-user ETH vault with global cap and per-tx withdraw limit",
+			"version": 1
+		},
+		"userdoc": {
+			"errors": {
+				"DirectDepositNotAllowed()": [
+					{
+						"notice": "Thrown when ETH is sent directly to contract instead of calling deposit()."
+					}
+				],
+				"ExceedsBankCap(uint256,uint256)": [
+					{
+						"notice": "Thrown when a deposit would exceed the bank's global cap."
+					}
+				],
+				"ExceedsWithdrawalLimit(uint256,uint256)": [
+					{
+						"notice": "Thrown when withdrawal amount exceeds per-transaction limit."
+					}
+				],
+				"InsufficientBalance(uint256,uint256)": [
+					{
+						"notice": "Thrown when the user does not have enough balance."
+					}
+				],
+				"InvalidConstructorArgs()": [
+					{
+						"notice": "Thrown when constructor args are invalid."
+					}
+				],
+				"ReentrantCall()": [
+					{
+						"notice": "Thrown on reentrant call."
+					}
+				],
+				"TransferFailed(address,uint256)": [
+					{
+						"notice": "Thrown when a native transfer fails."
+					}
+				],
+				"ZeroDeposit()": [
+					{
+						"notice": "Thrown when deposit value is zero."
+					}
+				],
+				"ZeroWithdrawal()": [
+					{
+						"notice": "Thrown when attempting to withdraw zero."
+					}
+				]
+			},
+			"events": {
+				"Deposit(address,uint256,uint256)": {
+					"notice": "Emitted when a user deposits ETH into their vault."
+				},
+				"Withdrawal(address,uint256,uint256)": {
+					"notice": "Emitted when a user withdraws ETH from their vault."
+				}
+			},
+			"kind": "user",
+			"methods": {
+				"BANK_CAP()": {
+					"notice": "Maximum total ETH the bank will accept (set at deployment)."
+				},
+				"WITHDRAWAL_LIMIT()": {
+					"notice": "Maximum amount a user can withdraw in a single transaction (set at deployment)."
+				},
+				"constructor": {
+					"notice": "Construct the KipuBank contract."
+				},
+				"deposit()": {
+					"notice": "Deposit ETH to the caller's personal vault."
+				},
+				"getBalance(address)": {
+					"notice": "Get the ETH balance of a user (in wei)."
+				},
+				"getMyBalance()": {
+					"notice": "Convenience: get caller balance."
+				},
+				"totalDepositCount()": {
+					"notice": "Total number of deposit operations successfully executed (global counter)."
+				},
+				"totalHeld()": {
+					"notice": "Current total ETH held in the bank (sum of all users' balances)."
+				},
+				"totalWithdrawCount()": {
+					"notice": "Total number of withdrawal operations successfully executed (global counter)."
+				},
+				"userDepositCount(address)": {
+					"notice": "Mapping of user => number of deposits done by that user."
+				},
+				"userWithdrawCount(address)": {
+					"notice": "Mapping of user => number of withdrawals done by that user."
+				},
+				"withdraw(uint256)": {
+					"notice": "Withdraw `amount` wei from caller's vault (subject to per-tx limit)."
+				}
+			},
+			"notice": "Store ETH per-user, withdraw up to a per-transaction immutable limit. Global bank cap is enforced.",
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			".git/contracts/KipuBank.sol": "KipuBank"
+		},
+		"evmVersion": "prague",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		".git/contracts/KipuBank.sol": {
+			"keccak256": "0x312b17341923367d9a287ef96550e969ab2e845e5e89eaad3dc1d7495558a24e",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://5cb552502fe59e79def5e57058ec860b8b21a9eb2dc7930c9ce854676bcbb2f2",
+				"dweb:/ipfs/QmSSpySVzKzuidg32XRWeGYEUTaSdCebnQ1WFRe41X9WrJ"
+			]
+		}
+	},
+	"version": 1
+}
